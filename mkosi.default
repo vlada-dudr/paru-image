@@ -1,0 +1,15 @@
+[Distribution]
+Distribution=arch
+[Partitions]
+RootSize=15G
+[Output]
+Bootable=yes
+[Content]
+Password=root
+Packages=base-devel,git,bash-completion,sudo,rust,devtools
+WithNetwork=yes
+[Host]
+QemuSmp=8
+QemuMem=6G
+Netdev=yes
+# vim:ft=dosini

@@ -1,0 +1,68 @@
+#!/bin/bash
+set -e 
+
+if [[ "$(whoami)" = root ]]
+then
+    pacman-key --init
+    pacman-key --populate
+    useradd -m -d /home/builder -s /bin/bash builder
+    echo builder:builder | chpasswd
+    chmod +w /etc/sudoers
+    echo "builder ALL=(ALL) NOPASSWD:ALL" >>/etc/sudoers
+    chmod -x /etc/sudoers
+    cat >> /etc/pacman.conf <<PACCONF
+[options]
+CacheDir = /var/lib/repo/aur
+[paru]
+SigLevel = PackageOptional DatabaseOptional
+Server = file:///var/lib/repo/aur
+PACCONF
+    echo MAKEFLAGS=-j6 >> /etc/makepkg.conf
+    mkdir -p /var/lib/repo/aur
+    chown builder:builder /var/lib/repo/aur
+    cp "$0" /install
+    chmod +x /install
+    exec sudo -u builder /install
+fi
+
+cd
+git clone https://aur.archlinux.org/paru-bin
+cd paru-bin
+makepkg
+sudo pacman --noconfirm -U ./paru-bin*.pkg.*
+cd
+mkdir -p .config/paru
+cat >.config/paru/paru.conf <<PARUCONF
+[options]
+PgpFetch
+Devel
+Provides
+DevelSuffixes = -git -cvs -svn -bzr -darcs -always -hg -fossil
+#AurOnly
+#BottomUp
+#RemoveMake
+#SudoLoop
+#UseAsk
+SaveChanges
+CombinedUpgrade
+#CleanAfter
+#UpgradeMenu
+NewsOnUpgrade
+BatchInstall
+
+LocalRepo = paru
+Chroot
+#Sign
+#SignDb
+#KeepRepoCache
+
+#
+# Binary OPTIONS
+#
+[bin]
+#FileManager = vifm
+#MFlags = --skippgpcheck
+#Sudo = doas
+Pager=less
+PARUCONF
+
